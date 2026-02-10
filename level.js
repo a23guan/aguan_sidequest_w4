@@ -23,15 +23,18 @@ class Level {
     this.ts = tileSize;
 
     // Start position in grid coordinates (row/col).
-    // We compute this by scanning for tile value 2. 
+    // We compute this by scanning for tile value 2.
     this.start = this.findStart();
 
     // Optional: if you don't want the start tile to remain "special"
     // after you’ve used it to spawn the player, you can normalize it
-    // to floor so it draws like floor and behaves like floor. 
+    // to floor so it draws like floor and behaves like floor.
     if (this.start) {
       this.grid[this.start.r][this.start.c] = 0;
     }
+
+    // Track which tiles have been clicked
+    this.clickedTiles = new Set();
   }
 
   // ----- Size helpers -----
@@ -74,7 +77,7 @@ class Level {
   // ----- Start-finding -----
 
   findStart() {
-    // Scan entire grid to locate the tile value 2 (start). 
+    // Scan entire grid to locate the tile value 2 (start).
     for (let r = 0; r < this.rows(); r++) {
       for (let c = 0; c < this.cols(); c++) {
         if (this.grid[r][c] === 2) {
@@ -86,6 +89,25 @@ class Level {
     // If a level forgets to include a start tile, return null.
     // (Then the game can choose a default spawn.)
     return null;
+  }
+
+  handleClick(mouseX, mouseY) {
+    // Convert pixel coordinates to grid coordinates
+    const c = Math.floor(mouseX / this.ts);
+    const r = Math.floor(mouseY / this.ts);
+
+    // Check if click is within grid bounds
+    if (this.inBounds(r, c)) {
+      // Create a unique key for this tile
+      const key = `${r},${c}`;
+
+      // Toggle clicked state
+      if (this.clickedTiles.has(key)) {
+        this.clickedTiles.delete(key);
+      } else {
+        this.clickedTiles.add(key);
+      }
+    }
   }
 
   // ----- Drawing -----
@@ -102,25 +124,19 @@ class Level {
     for (let r = 0; r < this.rows(); r++) {
       for (let c = 0; c < this.cols(); c++) {
         const v = this.grid[r][c];
+        const key = `${r},${c}`;
 
+        stroke(0);
+        strokeWeight(1);
         // Base tile fill
-        if (v === 1) fill(30, 50, 60);
-        else fill(232);
+        if (this.clickedTiles.has(key)) {
+          fill(0); // Black
+        } else {
+          // Original tile colors
+          fill(232);
+        }
 
         rect(c * this.ts, r * this.ts, this.ts, this.ts);
-
-        // Goal highlight overlay (only on tile 3). 
-        if (v === 3) {
-          noStroke();
-          fill(255, 200, 120, 200);
-          rect(
-            c * this.ts + 4,
-            r * this.ts + 4,
-            this.ts - 8,
-            this.ts - 8,
-            6
-          );
-        }
       }
     }
   }
